@@ -3,16 +3,33 @@ import morgan from "morgan";
 import "express-async-errors";
 import dotenv from 'dotenv';
 import Joi from 'joi';
-import { setupDb, getAll, getOneById, create, updateById, deleteById } from './controllers/planets.js';
+import fs from 'fs';
+import { setupDb, getAll, getOneById, create, updateById, deleteById, createImage } from './controllers/planets.js';
+import multer from "multer";
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Creazione della cartella uploads se non esiste
+if (!fs.existsSync("./uploads")) {
+  fs.mkdirSync("./uploads");
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "./uploads");
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.originalname);
+  },
+});
+const upload = multer({ storage });
+
 app.use(express.json());
 app.use(morgan("dev"));
-
+app.use('./uploads', express.static('uploads'))
 
 setupDb().then(() => {
   app.listen(port, () => {
@@ -20,9 +37,8 @@ setupDb().then(() => {
   });
 }).catch(err => {
   console.error("Error setting up the database:", err);
-  process.exit(1); 
+  process.exit(1);
 });
-
 
 app.get('/api/planets', getAll);
 app.get("/api/planets/:id", getOneById);
@@ -55,4 +71,7 @@ app.put('/api/planets/:id', async (req, res, next) => {
   }
 });
 
+app.post('/api/planets/:id/image', upload.single("image"), createImage);
+
 app.delete('/api/planets/:id', deleteById);
+
