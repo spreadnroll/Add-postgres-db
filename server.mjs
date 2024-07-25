@@ -7,7 +7,9 @@ import fs from 'fs';
 import multer from "multer";
 import passport from './passport.mjs';
 import { setupDb, getAll, getOneById, create, updateById, deleteById, createImage } from './controllers/planets.mjs';
-import { logIn, signUp, getUserDetails } from './controllers/users.mjs';
+import { logIn, signUp, getUserDetails, logOut } from './controllers/users.mjs';
+import { authorize } from "passport";
+import authorize from "./authorize.mjs";
 
 dotenv.config();
 
@@ -43,6 +45,7 @@ setupDb().then(() => {
 
 app.post('/api/users/login', logIn);
 app.post('/api/users/signup', signUp);
+app.get('/api/users/logout', authorize, logOut);
 
 
 

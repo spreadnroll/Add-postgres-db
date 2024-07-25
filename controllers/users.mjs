@@ -1,4 +1,4 @@
-// controllers/users.mjs
+
 import dotenv from 'dotenv';
 import db from "../db.mjs";
 import jwt from 'jsonwebtoken';
@@ -51,6 +51,15 @@ const signUp = async (req, res) => {
   }
 };
 
-export { logIn, getUserDetails, signUp };
+const logOut = async (req, res) => {
+  try {
+    await db.none(`UPDATE users SET token=null WHERE id=$1`, [req.user.id]);
+    res.status(200).json({ message: "Logged out successfully." });
+  } catch (err) {
+    res.status(500).json({ message: "Error logging out", error: err });
+  }
+};
+
+export { logIn, getUserDetails, signUp, logOut };
 
 
