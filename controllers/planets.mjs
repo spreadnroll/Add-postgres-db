@@ -1,22 +1,26 @@
 import dotenv from 'dotenv';
 import Joi from "joi";
-import pgPromise from "pg-promise";
+import db from "../db.mjs";
 
 dotenv.config();
 
-const db = pgPromise()(
-  process.env.DATABASE_URL || "postgres://postgres:postgres@localhost:5432/postgres"
-);
-
-const setupDb = async () => {
+export const setupDb = async () => {
   try {
     await db.none(`
       DROP TABLE IF EXISTS planets;
+      DROP TABLE IF EXISTS users;
 
       CREATE TABLE planets (
         id SERIAL NOT NULL PRIMARY KEY,
         name TEXT NOT NULL,
         image TEXT
+      );
+
+      CREATE TABLE users (
+        id SERIAL NOT NULL PRIMARY KEY,
+        username TEXT NOT NULL,
+        password TEXT NOT NULL,
+        token TEXT
       );
     `);
 
@@ -24,7 +28,7 @@ const setupDb = async () => {
     await db.none(`INSERT INTO planets (name) VALUES ('Mars')`);
     await db.none(`INSERT INTO planets (name) VALUES ('Jupiter')`);
     await db.none(`INSERT INTO planets (name) VALUES ('Namek')`);
-
+    await db.none(`INSERT INTO users (username, password) VALUES ('dummy', 'dummy')`);
   } catch (err) {
     console.error("Error setting up the database:", err);
   }
@@ -34,7 +38,7 @@ const planetSchema = Joi.object({
   name: Joi.string().required(),
 });
 
-const getAll = async (req, res) => {
+export const getAll = async (req, res) => {
   try {
     const planets = await db.many(`SELECT * FROM planets`);
     res.status(200).json(planets);
@@ -43,7 +47,7 @@ const getAll = async (req, res) => {
   }
 };
 
-const getOneById = async (req, res) => {
+export const getOneById = async (req, res) => {
   const { id } = req.params;
   try {
     const planet = await db.oneOrNone(`SELECT * FROM planets WHERE id=$1`, parseInt(id, 10));
@@ -57,7 +61,7 @@ const getOneById = async (req, res) => {
   }
 };
 
-const create = async (req, res) => {
+export const create = async (req, res) => {
   const { name } = req.body;
   const newPlanet = { name };
   const validatedNewPlanet = planetSchema.validate(newPlanet);
@@ -70,7 +74,7 @@ const create = async (req, res) => {
   }
 };
 
-const updateById = async (req, res) => {
+export const updateById = async (req, res) => {
   const { id } = req.params;
   const { name } = req.body;
 
@@ -95,7 +99,7 @@ const updateById = async (req, res) => {
   }
 };
 
-const deleteById = async (req, res) => {
+export const deleteById = async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -110,17 +114,16 @@ const deleteById = async (req, res) => {
   }
 };
 
-const createImage = async (req, res) => {
+export const createImage = async (req, res) => {
   console.log(req.file);
   const { id } = req.params;
   const fileName = req.file?.path;
 
   if (fileName) {
-    db.none(`UPDATE plantes SET image=$2 WHERE id=$1`, [id, fileName])
+    db.none(`UPDATE planets SET image=$2 WHERE id=$1`, [id, fileName]);
     res.status(201).json({ message: 'Planet image uploaded successfully', file: fileName });
   } else {
     res.status(400).json({ msg: 'No file uploaded' });
   }
-}
+};
 
-export { setupDb, getAll, getOneById, create, updateById, deleteById, createImage };
