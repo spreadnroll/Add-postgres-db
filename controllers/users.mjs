@@ -33,6 +33,24 @@ const getUserDetails = async (req, res) => {
   }
 };
 
-export { logIn, getUserDetails };
+
+const signUp = async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+    const user = await db.oneOrNone(`SELECT * FROM users WHERE username=$1`, username);
+
+    if (user) {
+      return res.status(400).json({ message: 'User already exists.' });
+    }
+
+    const { id } = await db.one(`INSERT INTO users (username, password) VALUES ($1, $2) RETURNING id`, [username, password]);
+    res.status(201).json({ id, message: 'User created successfully!' });
+  } catch (err) {
+    res.status(500).json({ message: "Error creating user", error: err });
+  }
+};
+
+export { logIn, getUserDetails, signUp };
 
 
